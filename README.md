@@ -17,21 +17,21 @@ C++20 が利用できる環境であれば問題無いはず。
 
 ## サンプルコード
 
-```
+```ini
 ; user_settings.ini
 [Section]
 Key1=Hello Private Profile
 Key2=foobar
 ```
 
-```
+```ini
 ; default_settings.ini
 [Section]
 Key1=Default Value
 Key2=1,1,1
 ```
 
-```
+```c++
 const pp::PrivateProfile profile("user_settings.ini", "default_settings.ini");
 
 if (const auto value = profile.get<std::string>("Section", "Key1"))
@@ -51,15 +51,16 @@ if (const auto value = profile.get<int>("Section", "Key2", ',')) // ',' はデ�
 
 ## 対応する ini ファイルのフォーマット
 
-- コメントは行頭の `;` または `#` から行末まで
 - 空行があってもよい
-- 行の最も先頭側の `=` または `:` をキーと値の区切りとする
-- エスケープ処理はしない
-- セクション、キーは大文字・小文字を区別しない
+- コメントは行頭の `;` または `#` から行末まで（行頭以外からコメントを開始できない）
+- 行の最も先頭側の `=` をキーと値の区切りとする
+- セクション、キーは大文字・小文字を区別する
 - 同名のセクションが複数ある場合、含まれるキーのリストが合成される
-- 1つのセクション内に複数の同名キーがある場合、取得できる値はいずれか1つのみであり、どの値になるかは選べない
-- セクション、キー、値の先頭と末尾の空白はトリミングされる
+- セクション内に複数の同名キーがある場合、取得できる値はいずれか1つのみであり、どの値になるかは選べない
+- セクション、キー、値の先頭や末尾の空白はトリミングされず、名前や値の一部と見做す
+- セクション、キー、値でエスケープ処理は行われない（`\`, `"` 等の文字を使う場合はそのまま書けばよい）
+- セクション、キー、値に ACSII 文字以外の文字を使用することは想定していない
 
-対応するフォーマットの詳細は [FormatTest.ini](PrivateProfileTest/TestProfile/FormatTest.ini) と [FormatTest.cpp](PrivateProfileTest/PrivateProfileTest/FormatTest.cpp) を参照。
+対応するフォーマットの詳細は [FormatTest.ini](PrivateProfileTest/TestProfile/FormatTest.ini) を参照。
 なお文字列から整数型や浮動小数点数型へのパースを `std::from_chars` に任せており、環境によって実行結果が微妙に変わる可能性がある。
 

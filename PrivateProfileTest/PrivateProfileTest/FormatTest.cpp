@@ -17,89 +17,92 @@ TEST(FormatTest, Comment)
 	const auto value2 = profile.get<std::string>("Comment", "Key2");
 	EXPECT_FALSE(value2);
 
-	const auto value3 = profile.get<std::string>("Comment", "Key3");
+	const auto value3 = profile.get<std::string>("CommentFail", "Key3");
 	EXPECT_TRUE(value3);
 	EXPECT_EQ(value3.value(), "Velue3 ; This is not comment.");
 
-	const auto value4 = profile.get<std::string>("Comment", "Key4");
+	const auto value4 = profile.get<std::string>("CommentFail", " #Key4");
 	EXPECT_TRUE(value4);
-	EXPECT_EQ(value4.value(), "Velue4 # This is not comment.");
 }
 
 TEST(FormatTest, Section)
 {
 	const pp::PrivateProfile profile(path);
 
-	// セクション名前後の空白はトリミングされる
 	const auto value1 = profile.get<std::string>("Section", "Key1");
 	EXPECT_TRUE(value1);
 	EXPECT_EQ(value1.value(), "Value1");
 
-	// 同名のセクションがある場合、1つのキー・値のテーブルに合成される
 	const auto value2 = profile.get<std::string>("Section", "Key2");
 	EXPECT_TRUE(value2);
 	EXPECT_EQ(value2.value(), "Value2");
 
-	// 大文字・小文字は区別される
 	const auto value3 = profile.get<std::string>("section", "Key3");
 	EXPECT_TRUE(value3);
 	EXPECT_EQ(value3.value(), "Value3");
 
-	const auto value4 = profile.get<std::string>("S e c t i o n", "Key4");
+	const auto value4 = profile.get<std::string>("\tS e c t i o n\t", "Key4");
 	EXPECT_TRUE(value4);
 	EXPECT_EQ(value4.value(), "Value4");
 
-	// [ はセクション名として使用できない
-	const auto value5 = profile.get<std::string>("Section[Fail", "Key5");
-	EXPECT_FALSE(value5);
+	const auto value5 = profile.get<std::string>("[#;Section;#]", "Key5");
+	EXPECT_TRUE(value5);
+	EXPECT_EQ(value5.value(), "Value5");
 
-	// ] はセクション名として使用できない
-	const auto value6 = profile.get<std::string>("Section]Fail", "Key6");
-	EXPECT_FALSE(value6);
+	const auto value6 = profile.get<std::string>(" ", "Key6");
+	EXPECT_TRUE(value6);
+	EXPECT_EQ(value6.value(), "Value6");
+
+	const auto value7 = profile.get<std::string>("Key=Value", "Key7");
+	EXPECT_TRUE(value7);
+	EXPECT_EQ(value7.value(), "Value7");
+
+	const auto value8 = profile.get<std::string>("", "Key8");
+	EXPECT_FALSE(value8);
+
+	const auto value9 = profile.get<std::string>("SectionFail", "Key9");
+	EXPECT_FALSE(value9);
+
+	const auto value10 = profile.get<std::string>("SectionFail", "Key10");
+	EXPECT_FALSE(value10);
 }
 
 TEST(FormatTest, Key)
 {
 	const pp::PrivateProfile profile(path);
 
-	// キーと値の区切りは : でもよい
 	const auto value1 = profile.get<std::string>("Key", "Key1");
 	EXPECT_TRUE(value1);
-	EXPECT_EQ(value1.value(), "Value1");
+	EXPECT_TRUE((value1.value() == "Value1A") || (value1.value() == "Value1B"));
 
-	// キー名前後の空白はトリミングされる
-	const auto value2 = profile.get<std::string>("Key", "Key2");
+	const auto VALUE1 = profile.get<std::string>("Key", "KEY1");
+	EXPECT_TRUE(VALUE1);
+	EXPECT_EQ(VALUE1.value(), "VALUE1");
+
+	const auto value2 = profile.get<std::string>("Key", "\tKey2 ");
 	EXPECT_TRUE(value2);
 	EXPECT_EQ(value2.value(), "Value2");
 
-	// キー名前後の空白はトリミングされる
-	const auto value3 = profile.get<std::string>("Key", "Key3");
+	const auto value3 = profile.get<std::string>("Key", "[#;Key3;#]");
 	EXPECT_TRUE(value3);
 	EXPECT_EQ(value3.value(), "Value3");
 
-	const auto value4 = profile.get<std::string>("Key", "K e y 4");
+	const auto value4 = profile.get<std::string>("Key", "Key4");
 	EXPECT_TRUE(value4);
-	EXPECT_EQ(value4.value(), "Value4");
+	EXPECT_TRUE(value4.value().empty());
 
-	// 大文字・小文字は区別される
-	const auto VALUE5 = profile.get<std::string>("Key", "KEY5");
-	EXPECT_TRUE(VALUE5);
-	EXPECT_EQ(VALUE5.value(), "Value5-1");
-
-	// 大文字・小文字は区別される
-	const auto value5 = profile.get<std::string>("Key", "key5");
+	const auto value5 = profile.get<std::string>("Key", " ");
 	EXPECT_TRUE(value5);
-	EXPECT_EQ(value5.value(), "Value5-2");
+	EXPECT_EQ(value5.value(), "Value5");
 
-	// 同一セクションに複数の同名キーがある場合、いずれか1つの値のみを保持する
-	// どの値を採用するかは選べない
-	const auto value6 = profile.get<std::string>("Key", "Key6");
-	EXPECT_TRUE(value6);
-	EXPECT_TRUE((value6.value() == "Value6-1") || (value6.value() == "Value6-2"));
+	const auto value6 = profile.get<std::string>("KeyFail", "");
+	EXPECT_FALSE(value6);
 
-	// キー名に [ ] は使用できない
-	const auto value7 = profile.get<std::string>("Key", "Key[7]");
+	const auto value7 = profile.get<std::string>("KeyFail", "Key7");
 	EXPECT_FALSE(value7);
+
+	const auto value8 = profile.get<std::string>("KeyFail", "[Key8]");
+	EXPECT_FALSE(value8);
 }
 
 TEST(FormatTest, StringValue)
@@ -110,32 +113,29 @@ TEST(FormatTest, StringValue)
 	EXPECT_TRUE(value1);
 	EXPECT_EQ(value1.value(), "Value1");
 
-	// 値の前後の空白はトリミングされる
-	const auto value2 = profile.get<std::string>("StringValue", "Key2");
+	const auto value2 = profile.get<std::string>("StringValue", "Key2 ");
 	EXPECT_TRUE(value2);
-	EXPECT_EQ(value2.value(), "Value2");
+	EXPECT_EQ(value2.value(), " Value 2");
 
 	const auto value3 = profile.get<std::string>("StringValue", "Key3");
 	EXPECT_TRUE(value3);
-	EXPECT_EQ(value3.value(), "V a l u e 3");
+	EXPECT_EQ(value3.value(), "\"Value3\"");
 
-	// " で囲った場合でも " は値の一部とみなされる
 	const auto value4 = profile.get<std::string>("StringValue", "Key4");
 	EXPECT_TRUE(value4);
-	EXPECT_EQ(value4.value(), "\"Value4\"");
+	EXPECT_EQ(value4.value(), "'Value4'");
 
-	// ' で囲った場合でも ' は値の一部とみなされる
 	const auto value5 = profile.get<std::string>("StringValue", "Key5");
 	EXPECT_TRUE(value5);
-	EXPECT_EQ(value5.value(), "'Value5'");
+	EXPECT_EQ(value5.value(), "=;#[]\\\\\t");
 
 	const auto value6 = profile.get<std::string>("StringValue", "Key6");
 	EXPECT_TRUE(value6);
-	EXPECT_EQ(value6.value(), R"(=:;#[]		\\)");
+	EXPECT_EQ(value6.value(), " ");
 
 	const auto value7 = profile.get<std::string>("StringValue", "Key7");
 	EXPECT_TRUE(value7);
-	EXPECT_EQ(value7.value(), R"(=:;#[]		\\)");
+	EXPECT_TRUE(value7.value().empty());
 }
 
 TEST(FormatTest, IntegerValue)
@@ -150,7 +150,6 @@ TEST(FormatTest, IntegerValue)
 	EXPECT_TRUE(value1_uint);
 	EXPECT_EQ(value1_uint.value(), 234u);
 
-	// char 型が表現できる範囲を超えているためパースに失敗する
 	const auto value1_char = profile.get<char>("IntegerValue", "Key1");
 	EXPECT_FALSE(value1_char);
 
@@ -162,21 +161,18 @@ TEST(FormatTest, IntegerValue)
 	EXPECT_TRUE(value2_int);
 	EXPECT_EQ(value2_int.value(), -234);
 
-	// 負数は unsigned 型としてのパースに失敗する
 	const auto value2_uint = profile.get<unsigned int>("IntegerValue", "Key2");
 	EXPECT_FALSE(value2_uint);
 
-	// char 型が表現できる範囲を超えているためパースに失敗する
 	const auto value2_char = profile.get<char>("IntegerValue", "Key2");
 	EXPECT_FALSE(value2_char);
 
-	// 負数は unsigned 型としてのパースに失敗する
 	const auto value2_uchar = profile.get<unsigned char>("IntegerValue", "Key2");
 	EXPECT_FALSE(value2_uchar);
 
-	// 小数点数は整数型としてパースできない
-	const auto value3 = profile.get<int>("IntegerValueFail", "Key3");
-	EXPECT_FALSE(value3);
+	const auto value3 = profile.get<int>("IntegerValue", "Key3");
+	EXPECT_TRUE(value3);
+	EXPECT_EQ(value3.value(), 7777);
 
 	const auto value4 = profile.get<int>("IntegerValueFail", "Key4");
 	EXPECT_FALSE(value4);
@@ -187,13 +183,20 @@ TEST(FormatTest, IntegerValue)
 	const auto value6 = profile.get<int>("IntegerValueFail", "Key6");
 	EXPECT_FALSE(value6);
 
-	// 8進数リテラル的な表記には対応していない（一応パースは通るものの、期待と異なる結果と思われるため失敗のテストとする）
 	const auto value7 = profile.get<int>("IntegerValueFail", "Key7");
-	EXPECT_NE(value7.value(), 0777);
+	EXPECT_FALSE(value7);
 
-	// 16進数リテラル的な表記には対応していない
 	const auto value8 = profile.get<int>("IntegerValueFail", "Key8");
 	EXPECT_FALSE(value8);
+
+	const auto value9 = profile.get<int>("IntegerValueFail", "Key9");
+	EXPECT_FALSE(value9);
+
+	const auto value10 = profile.get<int>("IntegerValueFail", "Key10");
+	EXPECT_FALSE(value10);
+
+	const auto value11 = profile.get<int>("IntegerValueFail", "Key11");
+	EXPECT_FALSE(value11);
 }
 
 TEST(FormatTest, FloatValue)
@@ -228,7 +231,6 @@ TEST(FormatTest, FloatValue)
 	EXPECT_TRUE(value6);
 	EXPECT_FLOAT_EQ(value6.value(), 0.234f);
 
-	// float で表現できない精度でもパースには成功する（丸められる）
 	const auto value7_float = profile.get<float>("DoubleValue", "Key7");
 	EXPECT_TRUE(value7_float);
 	EXPECT_FLOAT_EQ(value7_float.value(), 1.234568f);
@@ -237,23 +239,31 @@ TEST(FormatTest, FloatValue)
 	EXPECT_TRUE(value7_double);
 	EXPECT_DOUBLE_EQ(value7_double.value(), 1.234567890123456789);
 
-	// 2.34e+100 は float ではオーバーフローするためパースできない
 	const auto value8_float = profile.get<float>("DoubleValue", "Key8");
 	EXPECT_FALSE(value8_float);
 
-	// double ならパースに成功する
 	const auto value8_double = profile.get<double>("DoubleValue", "Key8");
 	EXPECT_TRUE(value8_double);
 	EXPECT_DOUBLE_EQ(value8_double.value(), 2.34e+100);
 
-	// 2.34e+100 は float ではアンダーフローするためパースできない（0 に丸められるわけではない）
 	const auto value9_float = profile.get<float>("DoubleValue", "Key9");
 	EXPECT_FALSE(value9_float);
 
-	// double ならパースに成功する
 	const auto value9_double = profile.get<double>("DoubleValue", "Key9");
 	EXPECT_TRUE(value9_double);
 	EXPECT_DOUBLE_EQ(value9_double.value(), 2.34e-100);
+
+	const auto value10_float = profile.get<float>("FloatDoubleValueFail", "Key10");
+	EXPECT_FALSE(value10_float);
+
+	const auto value10_double = profile.get<double>("FloatDoubleValueFail", "Key10");
+	EXPECT_FALSE(value10_double);
+
+	const auto value11_float = profile.get<float>("FloatDoubleValueFail", "Key11");
+	EXPECT_FALSE(value10_float);
+
+	const auto value11_double = profile.get<double>("FloatDoubleValueFail", "Key11");
+	EXPECT_FALSE(value11_double);
 }
 
 TEST(FormatTest, BooleanValue)
@@ -268,41 +278,39 @@ TEST(FormatTest, BooleanValue)
 	EXPECT_TRUE(value2);
 	EXPECT_FALSE(value2.value());
 
-	// 大文字表記には非対応
 	const auto value3 = profile.get<bool>("BooleanValueFail", "Key3");
 	EXPECT_FALSE(value3);
 
-	// 大文字表記には非対応
 	const auto value4 = profile.get<bool>("BooleanValueFail", "Key4");
 	EXPECT_FALSE(value4);
 
-	// 大文字表記には非対応
 	const auto value5 = profile.get<bool>("BooleanValueFail", "Key5");
 	EXPECT_FALSE(value5);
 
-	// 大文字表記には非対応
 	const auto value6 = profile.get<bool>("BooleanValueFail", "Key6");
 	EXPECT_FALSE(value6);
 
-	// 数値表記には非対応
 	const auto value7 = profile.get<bool>("BooleanValueFail", "Key7");
 	EXPECT_FALSE(value7);
 
-	// 数値表記には非対応
 	const auto value8 = profile.get<bool>("BooleanValueFail", "Key8");
 	EXPECT_FALSE(value8);
+
+	const auto value9 = profile.get<bool>("BooleanValueFail", "Key9");
+	EXPECT_FALSE(value9);
+
+	const auto value10 = profile.get<bool>("BooleanValueFail", "Key10");
+	EXPECT_FALSE(value10);
 }
 
 TEST(FormatTest, ArrayValue)
 {
 	const pp::PrivateProfile profile(path);
 
-	// ini ファイルに書かれている要素数よりも少なく取れる
 	const auto value1_1 = profile.get<int, 1>("ArrayValue", "Key1", ',');
 	EXPECT_TRUE(value1_1);
 	EXPECT_EQ(value1_1.value().at(0), 2);
 
-	// ini ファイルに書かれている要素数よりも少なく取れる
 	const auto value1_2 = profile.get<int, 2>("ArrayValue", "Key1", ',');
 	EXPECT_TRUE(value1_2);
 	EXPECT_EQ(value1_2.value().at(0), 2);
@@ -314,7 +322,6 @@ TEST(FormatTest, ArrayValue)
 	EXPECT_EQ(value1_3.value().at(1), 3);
 	EXPECT_EQ(value1_3.value().at(2), 4);
 
-	// ini ファイルに書かれている要素数よりも多く取ろうとするとパースに失敗する
 	const auto value1_4 = profile.get<int, 4>("ArrayValue", "Key1", ',');
 	EXPECT_FALSE(value1_4);
 
@@ -334,35 +341,41 @@ TEST(FormatTest, ArrayValue)
 	EXPECT_EQ(value4.value().at(0), "https://example.com/foo");
 	EXPECT_EQ(value4.value().at(1), "https://example.com/bar");
 
-	// ini ファイルに単一の値として書かれていても要素数 1 の std::array としてパースできる
 	const auto value5 = profile.get<int, 1>("ArrayValue", "Key5", ';');
 	EXPECT_TRUE(value5);
 	EXPECT_EQ(value5.value().at(0), 234);
 
-	// 型が混在しているとパースに失敗する
-	const auto value6 = profile.get<int, 4>("ArrayValueFail", "Key6", ',');
-	EXPECT_FALSE(value6);
+	const auto value6 = profile.get<std::string, 3>("ArrayValue", "Key6", ',');
+	EXPECT_TRUE(value6);
+	EXPECT_EQ(value6.value().at(0), "");
+	EXPECT_EQ(value6.value().at(1), "");
+	EXPECT_EQ(value6.value().at(2), "");
 
-	// 空の要素があるとパースに失敗する
-	const auto value7 = profile.get<int, 4>("ArrayValueFail", "Key7", ',');
+	const auto value7 = profile.get<int, 3>("ArrayValueFail", "Key7", ',');
 	EXPECT_FALSE(value7);
+	const auto value7_one = profile.get<int, 1>("ArrayValueFail", "Key7", ',');
+	EXPECT_TRUE(value7_one);
+	const auto value7_string = profile.get<std::string, 3>("ArrayValueFail", "Key7", ',');
+	EXPECT_TRUE(value7_string);
 
-	// 空の要素があるとパースに失敗する
-	const auto value8 = profile.get<int, 3>("ArrayValueFail", "Key8", ',');
+	const auto value8 = profile.get<int, 4>("ArrayValueFail", "Key8", ',');
 	EXPECT_FALSE(value8);
+	const auto value8_three = profile.get<int, 3>("ArrayValueFail", "Key8", ',');
+	EXPECT_TRUE(value8_three);
+	const auto value8_string = profile.get<std::string, 4>("ArrayValueFail", "Key8", ',');
+	EXPECT_TRUE(value8_string);
 
-	// 要素に空白が付いているとパースに失敗する
-	// （デリミタに空白文字が指定される可能性を考えると、各要素の前後の空白のトリムは無駄に複雑になりそうなので実装しない方針）
-	const auto value9_int = profile.get<int, 3>("ArrayValueFail", "Key9", ',');
-	EXPECT_FALSE(value9_int);
-
-	// 但し、文字列型としてならパースできる
+	const auto value9 = profile.get<int, 3>("ArrayValueFail", "Key9", ',');
+	EXPECT_FALSE(value9);
+	const auto value9_one = profile.get<int, 1>("ArrayValueFail", "Key9", ',');
+	EXPECT_TRUE(value9_one);
 	const auto value9_string = profile.get<std::string, 3>("ArrayValueFail", "Key9", ',');
 	EXPECT_TRUE(value9_string);
-	EXPECT_EQ(value9_string.value().size(), 3);
-	EXPECT_EQ(value9_string.value().at(0), "2");
-	EXPECT_EQ(value9_string.value().at(1), " 3");
-	EXPECT_EQ(value9_string.value().at(2), " 4");
+
+	const auto value10_int = profile.get<int, 3>("ArrayValueFail", "Key10", ',');
+	EXPECT_FALSE(value10_int);
+	const auto value10_string = profile.get<std::string, 3>("ArrayValueFail", "Key10", ',');
+	EXPECT_TRUE(value10_string);
 }
 
 TEST(FormatTest, VectorValue)
@@ -395,33 +408,33 @@ TEST(FormatTest, VectorValue)
 	EXPECT_EQ(value4.value().at(0), "https://example.com/foo");
 	EXPECT_EQ(value4.value().at(1), "https://example.com/bar");
 
-	// ini ファイルに単一の値として書かれていても要素数 1 の std::array としてパースできる
 	const auto value5 = profile.get<int>("VectorValue", "Key5", ';');
 	EXPECT_TRUE(value5);
 	EXPECT_EQ(value5.value().size(), 1);
 	EXPECT_EQ(value5.value().at(0), 234);
 
-	// 型が混在しているとパースに失敗する
-	const auto value6 = profile.get<int>("VectorValueFail", "Key6", ',');
-	EXPECT_FALSE(value6);
+	const auto value6 = profile.get<std::string>("VectorValue", "Key6", ',');
+	EXPECT_TRUE(value6);
+	EXPECT_EQ(value6.value().size(), 3);
+	EXPECT_EQ(value6.value().at(0), "");
+	EXPECT_EQ(value6.value().at(1), "");
+	EXPECT_EQ(value6.value().at(2), "");
 
-	// 空の要素があるとパースに失敗する
-	const auto value7 = profile.get<int>("VectorValueFail", "Key7", ',');
-	EXPECT_FALSE(value7);
-
-	// 空の要素があるとパースに失敗する
 	const auto value8 = profile.get<int>("VectorValueFail", "Key8", ',');
 	EXPECT_FALSE(value8);
+	const auto value8_string = profile.get<std::string>("VectorValueFail", "Key8", ',');
+	EXPECT_TRUE(value8_string);
+	EXPECT_EQ(value8_string.value().size(), 4);
 
-	// 要素に空白が付いているとパースに失敗する
-	// （デリミタに空白文字が指定される可能性を考えると、各要素の前後の空白のトリムは無駄に複雑になりそうなので実装しない方針）
-	const auto value9_int = profile.get<int>("VectorValueFail", "Key9", ',');
-	EXPECT_FALSE(value9_int);
-
-	// 但し、文字列型としてならパースできる
+	const auto value9 = profile.get<int>("VectorValueFail", "Key9", ',');
+	EXPECT_FALSE(value9);
 	const auto value9_string = profile.get<std::string>("VectorValueFail", "Key9", ',');
 	EXPECT_TRUE(value9_string);
-	EXPECT_EQ(value9_string.value().at(0), "2");
-	EXPECT_EQ(value9_string.value().at(1), " 3");
-	EXPECT_EQ(value9_string.value().at(2), " 4");
+	EXPECT_EQ(value9_string.value().size(), 3);
+
+	const auto value10_int = profile.get<int>("VectorValueFail", "Key10", ',');
+	EXPECT_FALSE(value10_int);
+	const auto value10_string = profile.get<std::string>("VectorValueFail", "Key10", ',');
+	EXPECT_TRUE(value10_string);
+	EXPECT_EQ(value9_string.value().size(), 3);
 }

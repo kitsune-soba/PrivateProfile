@@ -16,7 +16,6 @@
 #include <fstream>
 #include <functional>
 #include <optional>
-#include <regex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -91,14 +90,6 @@ public:
 	{ fallbackValueGetFailCallback = callback; }
 
 private:
-	// 正規表現
-	const std::string sectionName = R"(\s*([^\[\]]*[^\[\]\s]+)\s*)";
-	const std::string keyName = R"(\s*([^=:\[\]]*[^=:\[\]\s]+)\s*)";
-	const std::string valueName = R"(\s*(.*[^\s]+)\s*)";
-	const std::regex commentRegex{ "^[;#]" };
-	const std::regex sectionRegex{ "^\\s*\\[" + sectionName + "\\]\\s*$" };
-	const std::regex keyValueRegex{ "^" + keyName + "[=:]" + valueName + "$" };
-
 	// ファイルパス
 	const std::string primaryPath;
 	const std::string fallbackPath;
@@ -136,24 +127,32 @@ private:
 			throw ProfileLoadFailException(std::format("Failed to open {}", path));
 		}
 
-		std::smatch match;
 		std::string line, currentSection;
 		while (std::getline(ifs, line))
 		{
-			if (line.empty() || std::regex_match(line, match, commentRegex))
+			// 空行
+			if (line.empty()) { continue; }
+
+			const char& front = line.front();
+			const char& back = line.back();
+			const size_t equalPos = line.find_first_of('=');
+
+			// コメント行
+			if ((front == ';') || (front == '#'))
 			{
-				// no-op
+				continue;
 			}
-			else if (std::regex_match(line, match, keyValueRegex))
+			// セクション行
+			else if ((front == '[') && (back == ']') && (line.size() >= 3))
 			{
-				if (!currentSection.empty())
-				{
-					profile[currentSection][match[1]] = match[2];
-				}
+				currentSection = line.substr(1, line.size() - 2);
 			}
-			else if (std::regex_match(line, match, sectionRegex))
+			// キー・値の行
+			else if ((equalPos != std::string::npos) && (equalPos > 0))
 			{
-				currentSection = match[1];
+				const std::string key = line.substr(0, equalPos);
+				const std::string value = (equalPos == line.size() - 1) ? "" : line.substr(equalPos + 1);
+				profile[currentSection][key] = value;
 			}
 		}
 	}
@@ -223,11 +222,18 @@ private:
 				if (const auto element = fromString<T>(elementString)) { result.at(i) = *element; }
 				else { return std::nullopt; }
 			}
+			else if (valueString.back() == delimiter)
+			{
+				// valueString の末尾がデリミタで終わる場合は、最後に空文字列の要素があると解釈する
+				if (const auto last = fromString<T>("")) { result.at(i) = *last; return result; }
+				else { return std::nullopt; }
+			}
 			else
 			{
 				return std::nullopt;
 			}
 		}
+
 		return result;
 	}
 
@@ -235,22 +241,22 @@ private:
 	template<typename T>
 	std::optional<std::vector<T>> fromString(const std::string& valueString, char delimiter) const
 	{
-		if (*valueString.rbegin() == delimiter) { return std::nullopt; } // 末尾が空要素の場合はパース失敗とする
-
 		std::istringstream iss(valueString);
 		std::vector<T> result;
 		std::string elementString;
 		while (std::getline(iss, elementString, delimiter))
 		{
-			if (const auto element = fromString<T>(elementString))
-			{
-				result.emplace_back(*element);
-			}
-			else
-			{
-				return std::nullopt;
-			}
+			if (const auto element = fromString<T>(elementString)) { result.emplace_back(*element); }
+			else { return std::nullopt; }
 		}
+
+		// valueString の末尾がデリミタで終わる場合は、最後に空文字列の要素があると解釈する
+		if (valueString.back() == delimiter)
+		{
+			if (const auto last = fromString<T>("")) { result.emplace_back(*last); return result; }
+			else { return std::nullopt; }
+		}
+
 		return result;
 	}
 };
