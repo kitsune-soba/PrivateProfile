@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="FormatTest.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadTest.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="FallbackTest.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="CallbackTest.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Test">
+      <UniqueIdentifier>{3f9fc019-b9e2-4084-b24b-67455ca6970b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
