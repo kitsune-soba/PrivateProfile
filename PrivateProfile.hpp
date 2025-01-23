@@ -2,7 +2,7 @@
 	PrivateProfile.hpp
 
 	iniファイルの値を読み取るクラス。
-	バージョン : 1.0.0
+	バージョン : 1.1.0
 	詳細＆最新版 : https://github.com/kitsune-soba/PrivateProfile
 
 */
@@ -12,7 +12,6 @@
 
 #include <array>
 #include <charconv>
-#include <format>
 #include <fstream>
 #include <functional>
 #include <optional>
@@ -33,9 +32,19 @@ public:
 class PrivateProfile
 {
 public:
+	using InvalidLineCallback = std::function<void(const std::string&, const size_t, const std::string&)>; // path, lineNumber, line
+	using FailedGetCallback = std::function<void(const std::string&, const std::string&, const std::string&, const std::string&)>; // path, sectijon, key, type
+
 	// コンストラクタ
-	PrivateProfile(const std::string& primaryProfilePath, const std::string& fallbackProfilePath = "")
-		: primaryPath(primaryProfilePath), fallbackPath(fallbackProfilePath)
+	PrivateProfile(const std::string& primaryProfilePath, const InvalidLineCallback&& invalidLineCallback = InvalidLineCallback())
+		: primaryPath(primaryProfilePath), fallbackPath(""), invalidLineCallback(invalidLineCallback)
+	{
+		load();
+	}
+
+	// コンストラクタ
+	PrivateProfile(const std::string& primaryProfilePath, const std::string& fallbackProfilePath, const InvalidLineCallback&& invalidLineCallback = InvalidLineCallback())
+		: primaryPath(primaryProfilePath), fallbackPath(fallbackProfilePath), invalidLineCallback(invalidLineCallback)
 	{
 		load();
 	}
@@ -46,10 +55,10 @@ public:
 	std::optional<T> get(const std::string& section, const std::string& key) const
 	{
 		if (const auto primaryValue = getFrom<T>(primary, section, key)) { return primaryValue; }
-		else if (primaryValueGetFailCallback) { primaryValueGetFailCallback(primaryPath, section, key, typeid(T).name()); }
+		else if (failedGetPrimaryCallback) { failedGetPrimaryCallback(primaryPath, section, key, typeid(T).name()); }
 
 		if (const auto fallbackValue = getFrom<T>(fallback, section, key)) { return fallbackValue; }
-		else if (fallbackValueGetFailCallback) { fallbackValueGetFailCallback(fallbackPath, section, key, typeid(T).name()); }
+		else if (failedGetFallbackCallback) { failedGetFallbackCallback(fallbackPath, section, key, typeid(T).name()); }
 
 		return std::nullopt;
 	}
@@ -60,10 +69,10 @@ public:
 	std::optional<std::array<T, Size>> get(const std::string& section, const std::string& key, char delimiter) const
 	{
 		if (const auto primaryValue = getFrom<T, Size>(primary, section, key, delimiter)) { return primaryValue; }
-		else if (primaryValueGetFailCallback) { primaryValueGetFailCallback(primaryPath, section, key, typeid(std::array<T, Size>).name()); }
+		else if (failedGetPrimaryCallback) { failedGetPrimaryCallback(primaryPath, section, key, typeid(std::array<T, Size>).name()); }
 
 		if (const auto fallbackValue = getFrom<T, Size>(fallback, section, key, delimiter)) { return fallbackValue; }
-		else if (fallbackValueGetFailCallback) { fallbackValueGetFailCallback(fallbackPath, section, key, typeid(std::array<T, Size>).name()); }
+		else if (failedGetFallbackCallback) { failedGetFallbackCallback(fallbackPath, section, key, typeid(std::array<T, Size>).name()); }
 
 		return std::nullopt;
 	}
@@ -74,20 +83,19 @@ public:
 	std::optional<std::vector<T>> get(const std::string& section, const std::string& key, char delimiter) const
 	{
 		if (const auto primaryValue = getFrom<T>(primary, section, key, delimiter)) { return primaryValue; }
-		else if (primaryValueGetFailCallback) { primaryValueGetFailCallback(primaryPath, section, key, typeid(std::vector<T>).name()); }
+		else if (failedGetPrimaryCallback) { failedGetPrimaryCallback(primaryPath, section, key, typeid(std::vector<T>).name()); }
 
 		if (const auto fallbackValue = getFrom<T>(fallback, section, key, delimiter)) { return fallbackValue; }
-		else if (fallbackValueGetFailCallback) { fallbackValueGetFailCallback(fallbackPath, section, key, typeid(std::vector<T>).name()); }
+		else if (failedGetFallbackCallback) { failedGetFallbackCallback(fallbackPath, section, key, typeid(std::vector<T>).name()); }
 
 		return std::nullopt;
 	}
 
-	// 値の取得に失敗した際のコールバックを登録
-	using ValueGetFailCallback = std::function<void(const std::string&, const std::string&, const std::string&, const std::string&)>; // path, sectijon, key, type
-	void setPrimaryValueGetFailCallback(const ValueGetFailCallback&& callback)
-	{ primaryValueGetFailCallback = callback; }
-	void setFallbackValueGetFailCallback(const ValueGetFailCallback&& callback)
-	{ fallbackValueGetFailCallback = callback; }
+	// 値の取得失敗時のコールバックを設定
+	void setFailedGetPrimaryCallback(const FailedGetCallback&& callback)
+	{ failedGetPrimaryCallback = callback; }
+	void setFailedGetFallbackCallback(const FailedGetCallback&& callback)
+	{ failedGetFallbackCallback = callback; }
 
 private:
 	// ファイルパス
@@ -100,8 +108,9 @@ private:
 	Profile fallback;
 
 	// コールバック
-	ValueGetFailCallback primaryValueGetFailCallback;
-	ValueGetFailCallback fallbackValueGetFailCallback;
+	const InvalidLineCallback invalidLineCallback;
+	FailedGetCallback failedGetPrimaryCallback;
+	FailedGetCallback failedGetFallbackCallback;
 
 	PrivateProfile() = delete;
 	PrivateProfile(const PrivateProfile&) = delete;
@@ -124,12 +133,15 @@ private:
 		std::ifstream ifs(path);
 		if (!ifs)
 		{
-			throw ProfileLoadFailException(std::format("Failed to open {}", path));
+			throw ProfileLoadFailException("Failed to open " + path);
 		}
 
 		std::string line, currentSection;
+		size_t lineNumber = 0;
 		while (std::getline(ifs, line))
 		{
+			++lineNumber;
+
 			// 空行
 			if (line.empty()) { continue; }
 
@@ -153,6 +165,11 @@ private:
 				const std::string key = line.substr(0, equalPos);
 				const std::string value = (equalPos == line.size() - 1) ? "" : line.substr(equalPos + 1);
 				profile[currentSection][key] = value;
+			}
+			// 未知のフォーマット
+			else if (invalidLineCallback)
+			{
+				invalidLineCallback(path, lineNumber, line);
 			}
 		}
 	}

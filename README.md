@@ -9,7 +9,8 @@ ini ファイルへ値を書き込む機能は無い。
 
 ## 環境
 
-C++20 が利用できる環境であれば問題無いはず。
+- PrivateProfile.hpp : C++17 が利用できる環境であれば問題無いはず
+- PrivateProfileTest : Visual Studio 2022
 
 ## 導入
 

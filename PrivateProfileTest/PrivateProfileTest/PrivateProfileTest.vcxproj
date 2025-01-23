@@ -107,9 +107,9 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CallbackTest.cpp" />
+    <ClCompile Include="FailedGetCallbackTest.cpp" />
     <ClCompile Include="FallbackTest.cpp" />
-    <ClCompile Include="FormatTest.cpp" />
+    <ClCompile Include="GetTest.cpp" />
     <ClCompile Include="LoadTest.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

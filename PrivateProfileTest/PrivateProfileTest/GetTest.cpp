@@ -7,7 +7,7 @@ namespace
 const std::string path = "../TestProfile/FormatTest.ini";
 
 }
-TEST(FormatTest, Comment)
+TEST(GetTest, Comment)
 {
 	const pp::PrivateProfile profile(path);
 
@@ -25,7 +25,7 @@ TEST(FormatTest, Comment)
 	EXPECT_TRUE(value4);
 }
 
-TEST(FormatTest, Section)
+TEST(GetTest, Section)
 {
 	const pp::PrivateProfile profile(path);
 
@@ -67,7 +67,7 @@ TEST(FormatTest, Section)
 	EXPECT_FALSE(value10);
 }
 
-TEST(FormatTest, Key)
+TEST(GetTest, Key)
 {
 	const pp::PrivateProfile profile(path);
 
@@ -105,7 +105,7 @@ TEST(FormatTest, Key)
 	EXPECT_FALSE(value8);
 }
 
-TEST(FormatTest, StringValue)
+TEST(GetTest, StringValue)
 {
 	const pp::PrivateProfile profile(path);
 
@@ -138,7 +138,7 @@ TEST(FormatTest, StringValue)
 	EXPECT_TRUE(value7.value().empty());
 }
 
-TEST(FormatTest, IntegerValue)
+TEST(GetTest, IntegerValue)
 {
 	const pp::PrivateProfile profile(path);
 
@@ -199,7 +199,7 @@ TEST(FormatTest, IntegerValue)
 	EXPECT_FALSE(value11);
 }
 
-TEST(FormatTest, FloatValue)
+TEST(GetTest, FloatValue)
 {
 	const pp::PrivateProfile profile(path);
 
@@ -266,7 +266,7 @@ TEST(FormatTest, FloatValue)
 	EXPECT_FALSE(value11_double);
 }
 
-TEST(FormatTest, BooleanValue)
+TEST(GetTest, BooleanValue)
 {
 	const pp::PrivateProfile profile(path);
 
@@ -303,7 +303,7 @@ TEST(FormatTest, BooleanValue)
 	EXPECT_FALSE(value10);
 }
 
-TEST(FormatTest, ArrayValue)
+TEST(GetTest, ArrayValue)
 {
 	const pp::PrivateProfile profile(path);
 
@@ -378,7 +378,7 @@ TEST(FormatTest, ArrayValue)
 	EXPECT_TRUE(value10_string);
 }
 
-TEST(FormatTest, VectorValue)
+TEST(GetTest, VectorValue)
 {
 	const pp::PrivateProfile profile(path);
 
