@@ -2,7 +2,7 @@
 	PrivateProfile.hpp
 
 	iniファイルの値を読み取るクラス。
-	バージョン : 1.2.0
+	バージョン : 1.2.1
 	説明＆最新版 : https://github.com/kitsune-soba/PrivateProfile
 
 */
@@ -15,6 +15,7 @@
 #include <fstream>
 #include <functional>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
