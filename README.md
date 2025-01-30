@@ -10,7 +10,7 @@ ini ファイルへ値を書き込む機能は無い。
 ## 環境
 
 - PrivateProfile.hpp : C++17 が利用できる環境であれば問題無いはず
-- PrivateProfileTest : Visual Studio 2022
+- PrivateProfileTest : Visual Studio 2022（C++ 20 以上）
 
 ## 導入
 
@@ -23,6 +23,7 @@ ini ファイルへ値を書き込む機能は無い。
 [Section]
 Key1=Hello Private Profile
 Key2=foobar
+Key3=Platinum
 ```
 
 ```ini
@@ -30,6 +31,7 @@ Key2=foobar
 [Section]
 Key1=Default Value
 Key2=1,1,1
+Key3=Silver
 ```
 
 ```c++
@@ -47,6 +49,14 @@ if (const auto value = profile.get<int>("Section", "Key2", ',')) // ',' はデ�
 	// user_settings.ini の値（foobar）は std::vector<int> としてのパースに失敗するため、
 	// default_settings.ini の値へのフォールバックが試みられる
 	std::cout << std::format("{}", *value) << std::endl; // 出力 : [1, 1, 1]
+}
+
+if (const auto value = profile.get<std::string>("Section", "Key3", { "Gold", "Silver", "Bronze" }))
+{
+	// value の型は std::optional<std::string>
+    // user_settings.ini の値（Platinum）はオプション（Gold, Silver, Bronze）に含まれないため、
+    // default_settings.ini の値へのフォールバックが試みられる
+	std::cout << *value << std::endl; // 出力 : Silver
 }
 ```
 

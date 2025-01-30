@@ -438,3 +438,28 @@ TEST(GetTest, VectorValue)
 	EXPECT_TRUE(value10_string);
 	EXPECT_EQ(value9_string.value().size(), 3);
 }
+
+TEST(GetTest, Options)
+{
+	const pp::PrivateProfile profile(path);
+
+	const auto stringValue = profile.get<std::string>("StringValue", "Key1", { "Value1", "Value2", "Value3" });
+	EXPECT_TRUE(stringValue);
+	EXPECT_EQ(stringValue.value(), "Value1");
+	EXPECT_FALSE(profile.get<std::string>("StringValue", "Key1", { "ValueA", "ValueB", "ValueC" }));
+
+	const auto integerValue = profile.get<int>("IntegerValue", "Key1", { 123, 234, 345 });
+	EXPECT_TRUE(integerValue);
+	EXPECT_EQ(integerValue.value(), 234);
+	EXPECT_FALSE(profile.get<int>("IntegerValue", "Key1", { 0, 1, 2 }));
+
+	const auto floatValue = profile.get<float>("FloatValue", "Key1", { 1.23f, 2.34f, 3.45f });
+	EXPECT_TRUE(floatValue);
+	EXPECT_EQ(floatValue.value(), 2.34f);
+	EXPECT_FALSE(profile.get<float>("FloatValue", "Key1", { 0.f, 1.f, 2.f }));
+
+	const auto booleanValue = profile.get<bool>("BooleanValue", "Key1", std::unordered_set<bool>{ true });
+	EXPECT_TRUE(booleanValue);
+	EXPECT_EQ(booleanValue.value(), true);
+	EXPECT_FALSE(profile.get<bool>("BooleanValue", "Key1", std::unordered_set<bool>{ false }));
+}
