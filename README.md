@@ -9,8 +9,8 @@ ini ファイルへ値を書き込む機能は無い。
 
 ## 環境
 
-- PrivateProfile.hpp : C++17 が利用できる環境であれば問題無いはず
-- PrivateProfileTest : Visual Studio 2022（C++ 20 以上）
+- PrivateProfile.hpp : C++23 が利用できる環境であれば問題無いはず
+- PrivateProfileTest : Visual Studio 2022
 
 ## 導入
 
@@ -54,8 +54,8 @@ if (const auto value = profile.get<int>("Section", "Key2", ',')) // ',' はデ�
 if (const auto value = profile.get<std::string>("Section", "Key3", { "Gold", "Silver", "Bronze" }))
 {
 	// value の型は std::optional<std::string>
-    // user_settings.ini の値（Platinum）はオプション（Gold, Silver, Bronze）に含まれないため、
-    // default_settings.ini の値へのフォールバックが試みられる
+	// user_settings.ini の値（Platinum）はオプション（Gold, Silver, Bronze）に含まれないため、
+	// default_settings.ini の値へのフォールバックが試みられる
 	std::cout << *value << std::endl; // 出力 : Silver
 }
 ```
